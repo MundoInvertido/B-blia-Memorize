@@ -1,0 +1,91 @@
+import { useState } from 'react';
+
+const CHAVE_USUARIOS = 'memo_biblia_usuarios_v1';
+const CHAVE_ATIVO    = 'memo_biblia_ativo_v1';
+
+export const CORES_USUARIO = [
+  { id: 'blue',   bg: 'bg-blue-500',   label: 'Azul' },
+  { id: 'purple', bg: 'bg-purple-500', label: 'Roxo' },
+  { id: 'green',  bg: 'bg-green-500',  label: 'Verde' },
+  { id: 'rose',   bg: 'bg-rose-500',   label: 'Rosa' },
+  { id: 'orange', bg: 'bg-orange-500', label: 'Laranja' },
+  { id: 'teal',   bg: 'bg-teal-500',   label: 'Teal' },
+];
+
+// Simple local hash — not cryptographic, just avoids plain-text in localStorage
+function hashSenha(senha) {
+  if (!senha) return '';
+  let h = 0;
+  const s = senha + '_mb2026salt';
+  for (let i = 0; i < s.length; i++) {
+    h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+  }
+  return Math.abs(h).toString(36).padStart(10, '0');
+}
+
+function lerUsuarios() {
+  try {
+    return JSON.parse(localStorage.getItem(CHAVE_USUARIOS) ?? '[]');
+  } catch { return []; }
+}
+
+function gravarUsuarios(lista) {
+  localStorage.setItem(CHAVE_USUARIOS, JSON.stringify(lista));
+}
+
+export function useUsuarios() {
+  const [usuarios, setUsuarios] = useState(lerUsuarios);
+  const [usuarioAtivo, setUsuarioAtivo] = useState(() => {
+    const id = localStorage.getItem(CHAVE_ATIVO);
+    if (!id) return null;
+    return lerUsuarios().find(u => u.id === id) ?? null;
+  });
+  const [erro, setErro] = useState('');
+
+  const criarUsuario = ({ nome, senha, cor = 'blue' }) => {
+    setErro('');
+    const nomeTrim = nome.trim();
+    if (!nomeTrim) { setErro('Digite um nome.'); return false; }
+    if (nomeTrim.length < 2) { setErro('Nome muito curto (mínimo 2 caracteres).'); return false; }
+    const lista = lerUsuarios();
+    if (lista.some(u => u.nome.toLowerCase() === nomeTrim.toLowerCase())) {
+      setErro('Esse nome já está em uso.'); return false;
+    }
+    const novo = {
+      id: Date.now().toString(),
+      nome: nomeTrim,
+      senhaHash: hashSenha(senha),
+      temSenha: !!senha,
+      cor,
+      criadoEm: new Date().toISOString().split('T')[0],
+    };
+    const novaLista = [...lista, novo];
+    gravarUsuarios(novaLista);
+    setUsuarios(novaLista);
+    localStorage.setItem(CHAVE_ATIVO, novo.id);
+    setUsuarioAtivo(novo);
+    return true;
+  };
+
+  const login = ({ nome, senha }) => {
+    setErro('');
+    const lista = lerUsuarios();
+    const usuario = lista.find(u => u.nome.toLowerCase() === nome.trim().toLowerCase());
+    if (!usuario) { setErro('Usuário não encontrado.'); return false; }
+    if (usuario.temSenha && usuario.senhaHash !== hashSenha(senha)) {
+      setErro('Senha incorreta.'); return false;
+    }
+    localStorage.setItem(CHAVE_ATIVO, usuario.id);
+    setUsuarioAtivo(usuario);
+    return true;
+  };
+
+  const sair = () => {
+    localStorage.removeItem(CHAVE_ATIVO);
+    setUsuarioAtivo(null);
+  };
+
+  const limparErro = () => setErro('');
+
+  return { usuarios, usuarioAtivo, criarUsuario, login, sair, erro, limparErro };
+}
