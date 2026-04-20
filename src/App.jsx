@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useUsuarios } from './hooks/useUsuarios';
 import { useVersiculos } from './hooks/useVersiculos';
 import { useGamificacao } from './hooks/useGamificacao';
 import { useTraducao } from './hooks/useTraducao';
+import { sincronizarUsuario } from './lib/cloudSync';
 import TelaLogin from './components/TelaLogin';
 import Navegacao from './components/Navegacao';
 import Sidebar from './components/Sidebar';
@@ -11,21 +12,29 @@ import VistaLista from './components/VistaLista';
 import VistaAdicionar from './components/VistaAdicionar';
 import VistaMenuPratica from './components/VistaMenuPratica';
 import VistaPratica from './components/VistaPratica';
+import VistaRanking from './components/VistaRanking';
+import VistaSobre from './components/VistaSobre';
 
-// ─── AppConteudo: re-montado com key quando o usuário muda ───────────────────
 function AppConteudo({ usuario, onSair }) {
   const { versiculos, adicionar, apagar, registrarPraticaVersiculo, restaurar: restaurarV } = useVersiculos(usuario.id);
   const { gami, praticasHoje, registrarPratica, limparNovasConquistas, restaurar: restaurarG } = useGamificacao(versiculos, usuario.id);
   const { traducao, setTraducao } = useTraducao(usuario.id);
 
-  const [vista, setVista] = useState('lista');
+  const [vista, setVista]               = useState('lista');
   const [versiculoAtivo, setVersiculoAtivo] = useState(null);
-  const [modoPratica, setModoPratica] = useState(null);
-  const importInputRef = useRef(null);
+  const [modoPratica, setModoPratica]   = useState(null);
+  const importInputRef                  = useRef(null);
 
-  const irParaLista = () => { setVista('lista'); setVersiculoAtivo(null); setModoPratica(null); };
+  // Sincroniza com Firebase após cada prática
+  useEffect(() => {
+    if (gami.totalPraticas > 0) {
+      sincronizarUsuario(usuario, gami, versiculos);
+    }
+  }, [gami.totalPraticas]);
+
+  const irParaLista      = () => { setVista('lista');    setVersiculoAtivo(null); setModoPratica(null); };
   const abrirMenuPratica = (v) => { setVersiculoAtivo(v); setVista('menu_pratica'); };
-  const iniciarPratica = (modo) => { setModoPratica(modo); setVista('pratica'); };
+  const iniciarPratica   = (modo) => { setModoPratica(modo); setVista('pratica'); };
 
   const handleConcluir = (resultado) => {
     registrarPraticaVersiculo(versiculoAtivo.id, resultado);
@@ -33,15 +42,8 @@ function AppConteudo({ usuario, onSair }) {
     irParaLista();
   };
 
-  // ── Export ──
   const handleExportar = () => {
-    const dados = {
-      versao: '1.0',
-      usuario: usuario.nome,
-      exportadoEm: new Date().toISOString(),
-      versiculos,
-      gamificacao: gami,
-    };
+    const dados = { versao: '1.0', usuario: usuario.nome, exportadoEm: new Date().toISOString(), versiculos, gamificacao: gami };
     const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -51,7 +53,6 @@ function AppConteudo({ usuario, onSair }) {
     URL.revokeObjectURL(url);
   };
 
-  // ── Import ──
   const handleImportar = (e) => {
     const arquivo = e.target.files?.[0];
     if (!arquivo) return;
@@ -62,9 +63,7 @@ function AppConteudo({ usuario, onSair }) {
         if (dados.versiculos) restaurarV(dados.versiculos);
         if (dados.gamificacao) restaurarG(dados.gamificacao);
         alert('✅ Dados importados com sucesso!');
-      } catch {
-        alert('❌ Arquivo inválido. Use um backup exportado pelo MemoBíblia.');
-      }
+      } catch { alert('❌ Arquivo inválido.'); }
     };
     reader.readAsText(arquivo);
     e.target.value = '';
@@ -76,6 +75,8 @@ function AppConteudo({ usuario, onSair }) {
         vista={vista}
         irParaLista={irParaLista}
         irParaAdicionar={() => setVista('adicionar')}
+        irParaRanking={() => setVista('ranking')}
+        irParaSobre={() => setVista('sobre')}
         gami={gami}
         usuario={usuario}
       />
@@ -84,7 +85,6 @@ function AppConteudo({ usuario, onSair }) {
         <NotificacaoConquista conquistas={gami.novasConquistas} onDismiss={limparNovasConquistas} />
       )}
 
-      {/* Hidden file input for import */}
       <input ref={importInputRef} type="file" accept=".json" className="hidden" onChange={handleImportar} />
 
       <div className="max-w-6xl mx-auto px-4 py-6 flex gap-6 items-start">
@@ -114,7 +114,18 @@ function AppConteudo({ usuario, onSair }) {
             <VistaMenuPratica versiculo={versiculoAtivo} onIniciar={iniciarPratica} onVoltar={irParaLista} />
           )}
           {vista === 'pratica' && versiculoAtivo && (
-            <VistaPratica versiculo={versiculoAtivo} modo={modoPratica} onVoltar={() => abrirMenuPratica(versiculoAtivo)} onConcluir={handleConcluir} />
+            <VistaPratica
+              versiculo={versiculoAtivo}
+              modo={modoPratica}
+              onVoltar={() => abrirMenuPratica(versiculoAtivo)}
+              onConcluir={handleConcluir}
+            />
+          )}
+          {vista === 'ranking' && (
+            <VistaRanking usuarioAtivo={usuario} />
+          )}
+          {vista === 'sobre' && (
+            <VistaSobre />
           )}
         </main>
       </div>
@@ -122,7 +133,6 @@ function AppConteudo({ usuario, onSair }) {
   );
 }
 
-// ─── App raiz ────────────────────────────────────────────────────────────────
 export default function App() {
   const { usuarios, usuarioAtivo, criarUsuario, login, sair, erro, limparErro } = useUsuarios();
 

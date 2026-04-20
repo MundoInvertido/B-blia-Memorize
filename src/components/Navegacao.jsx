@@ -1,25 +1,34 @@
-import { BookOpen, List, Plus, Star } from 'lucide-react';
+import { BookOpen, List, Plus, Star, Trophy, Info } from 'lucide-react';
 import { nivelFromXP, progressoNivel } from '../lib/gamification';
 
-export default function Navegacao({ vista, irParaLista, irParaAdicionar, gami, usuario }) {
-  const nivel = nivelFromXP(gami?.xpTotal ?? 0);
+export default function Navegacao({ vista, irParaLista, irParaAdicionar, irParaRanking, irParaSobre, gami }) {
+  const nivel    = nivelFromXP(gami?.xpTotal ?? 0);
   const progresso = progressoNivel(gami?.xpTotal ?? 0);
-  const streak = gami?.streakAtual ?? 0;
+  const streak   = gami?.streakAtual ?? 0;
+
+  const btn = (vistaAlvo, onClick, icon, label) => (
+    <button
+      onClick={onClick}
+      className={`p-2 rounded-xl transition flex items-center gap-1.5 text-sm font-medium ${
+        vista === vistaAlvo ? 'bg-white/20' : 'hover:bg-white/10'
+      }`}
+    >
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
+    </button>
+  );
 
   return (
     <nav className="sticky top-0 z-40 bg-gradient-to-r from-blue-700 to-blue-800 text-white shadow-lg">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-4">
 
         {/* Logo */}
-        <button
-          onClick={irParaLista}
-          className="flex items-center gap-2 font-black text-xl mr-auto"
-        >
+        <button onClick={irParaLista} className="flex items-center gap-2 font-black text-xl mr-auto">
           <BookOpen size={24} />
           <span className="hidden sm:inline">MemoBíblia</span>
         </button>
 
-        {/* Stats (desktop) */}
+        {/* Stats desktop */}
         {gami && (
           <div className="hidden md:flex items-center gap-4 mr-2">
             {streak > 0 && (
@@ -43,24 +52,10 @@ export default function Navegacao({ vista, irParaLista, irParaAdicionar, gami, u
 
         {/* Nav buttons */}
         <div className="flex gap-1">
-          <button
-            onClick={irParaLista}
-            className={`p-2 rounded-xl transition flex items-center gap-1.5 text-sm font-medium ${
-              vista === 'lista' ? 'bg-white/20' : 'hover:bg-white/10'
-            }`}
-          >
-            <List size={18} />
-            <span className="hidden sm:inline">Versículos</span>
-          </button>
-          <button
-            onClick={irParaAdicionar}
-            className={`p-2 rounded-xl transition flex items-center gap-1.5 text-sm font-medium ${
-              vista === 'adicionar' ? 'bg-white/20' : 'hover:bg-white/10'
-            }`}
-          >
-            <Plus size={18} />
-            <span className="hidden sm:inline">Adicionar</span>
-          </button>
+          {btn('lista',    irParaLista,    <List size={18} />,   'Versículos')}
+          {btn('adicionar', irParaAdicionar, <Plus size={18} />,  'Adicionar')}
+          {btn('ranking',  irParaRanking,  <Trophy size={18} />, 'Ranking')}
+          {btn('sobre',    irParaSobre,    <Info size={18} />,   'Sobre')}
         </div>
       </div>
     </nav>
