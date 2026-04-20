@@ -1,4 +1,5 @@
-import { BookOpen, Play, Trash2, Bell } from 'lucide-react';
+import { useState } from 'react';
+import { BookOpen, Play, Trash2, Bell, Copy, Check } from 'lucide-react';
 import { ordenarVersiculos, estaVencido, NIVEL_LABELS, NIVEL_CORES } from '../lib/srs';
 
 function Estrelas({ nivel }) {
@@ -13,6 +14,26 @@ function Estrelas({ nivel }) {
         </span>
       ))}
     </div>
+  );
+}
+
+function BotaoCopiar({ texto, referencia }) {
+  const [copiado, setCopiado] = useState(false);
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(`${texto} (${referencia})`);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch { /* sem permissão */ }
+  };
+  return (
+    <button
+      onClick={copiar}
+      className={`p-2 rounded-lg transition ${copiado ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+      title="Copiar versículo"
+    >
+      {copiado ? <Check size={14} /> : <Copy size={14} />}
+    </button>
   );
 }
 
@@ -99,6 +120,7 @@ export default function VistaLista({ versiculos, onPraticar, onApagar }) {
                       : 'Nunca praticado'}
                   </span>
                   <div className="flex gap-1.5">
+                    <BotaoCopiar texto={v.texto} referencia={v.referencia} />
                     <button
                       onClick={() => onPraticar(v)}
                       className="bg-blue-100 text-blue-700 p-2 rounded-lg hover:bg-blue-200 transition"
