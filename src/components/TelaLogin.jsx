@@ -4,7 +4,7 @@ import { CORES_USUARIO } from '../hooks/useUsuarios';
 import { firebaseConfigurado } from '../lib/firebase';
 
 export default function TelaLogin({ usuarios, onLogin, onCriar, erro, limparErro, autenticando }) {
-  const [modo, setModo]                   = useState(usuarios.length === 0 ? 'criar' : 'selecionar');
+  const [modo, setModo]                   = useState('criar');
   const [usuarioSelecionado, setUsuarioSelecionado] = useState(null);
   const [nome, setNome]                   = useState('');
   const [senha, setSenha]                 = useState('');
@@ -14,7 +14,9 @@ export default function TelaLogin({ usuarios, onLogin, onCriar, erro, limparErro
   const [erroLocal, setErroLocal]         = useState('');
 
   const mudarModo = (m) => {
-    setModo(m); setUsuarioSelecionado(null);
+    // Se não há usuários locais e clicou "Entrar", vai direto para login por nome
+    const modoFinal = (m === 'selecionar' && usuarios.length === 0) ? 'nome' : m;
+    setModo(modoFinal); setUsuarioSelecionado(null);
     setNome(''); setSenha(''); setConfirmar('');
     setErroLocal(''); limparErro();
   };
@@ -59,13 +61,11 @@ export default function TelaLogin({ usuarios, onLogin, onCriar, erro, limparErro
 
         {/* Tabs */}
         <div className="flex border-b border-slate-100">
-          {usuarios.length > 0 && (
-            <button onClick={() => mudarModo('selecionar')}
-              className={`flex-1 py-3.5 text-sm font-bold transition ${modo !== 'criar' ? 'text-blue-700 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              Entrar
-            </button>
-          )}
+          <button onClick={() => mudarModo('selecionar')}
+            className={`flex-1 py-3.5 text-sm font-bold transition ${modo !== 'criar' ? 'text-blue-700 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            Entrar
+          </button>
           <button onClick={() => mudarModo('criar')}
             className={`flex-1 py-3.5 text-sm font-bold transition ${modo === 'criar' ? 'text-blue-700 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
           >
