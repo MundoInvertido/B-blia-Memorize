@@ -2,6 +2,36 @@ import {
   doc, setDoc, getDoc, collection,
   query, orderBy, limit, onSnapshot,
 } from 'firebase/firestore';
+
+// ── Contas de usuário (login cross-device) ───────────────────────────────────
+
+function normNome(nome) {
+  return nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+export async function salvarConta(usuario) {
+  if (!firebaseConfigurado || !db) return;
+  try {
+    await setDoc(doc(db, 'contas', normNome(usuario.nome)), {
+      userId:    usuario.id,
+      nome:      usuario.nome,
+      senhaHash: usuario.senhaHash,
+      temSenha:  usuario.temSenha,
+      cor:       usuario.cor,
+      criadoEm:  usuario.criadoEm,
+    });
+  } catch (e) {
+    console.warn('salvarConta falhou:', e.message);
+  }
+}
+
+export async function buscarContaPorNome(nome) {
+  if (!firebaseConfigurado || !db) return null;
+  try {
+    const snap = await getDoc(doc(db, 'contas', normNome(nome)));
+    return snap.exists() ? snap.data() : null;
+  } catch { return null; }
+}
 import { db, firebaseConfigurado } from './firebase';
 
 // ── Backup completo ──────────────────────────────────────────────────────────

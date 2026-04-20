@@ -133,7 +133,7 @@ function AppConteudo({ usuario, onSair }) {
 }
 
 export default function App() {
-  const { usuarios, usuarioAtivo, criarUsuario, login, sair, erro, limparErro } = useUsuarios();
+  const { usuarios, usuarioAtivo, criarUsuario, login, sair, erro, limparErro, autenticando } = useUsuarios();
 
   if (!usuarioAtivo) {
     return (
@@ -143,6 +143,7 @@ export default function App() {
         onCriar={criarUsuario}
         erro={erro}
         limparErro={limparErro}
+        autenticando={autenticando}
       />
     );
   }
