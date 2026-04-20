@@ -26,3 +26,7 @@ dist-ssr
 # Project specific
 .remember
 .gemini
+
+# Capacitor
+android/
+ios/
