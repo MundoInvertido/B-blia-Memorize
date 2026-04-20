@@ -1,7 +1,7 @@
 import { BookOpen, List, Plus, Star, Trophy, Info } from 'lucide-react';
 import { nivelFromXP, progressoNivel } from '../lib/gamification';
 
-export default function Navegacao({ vista, irParaLista, irParaAdicionar, irParaRanking, irParaSobre, gami }) {
+export default function Navegacao({ vista, irParaLista, irParaAdicionar, irParaRanking, irParaSobre, gami, statusSync }) {
   const nivel    = nivelFromXP(gami?.xpTotal ?? 0);
   const progresso = progressoNivel(gami?.xpTotal ?? 0);
   const streak   = gami?.streakAtual ?? 0;
@@ -48,6 +48,11 @@ export default function Navegacao({ vista, irParaLista, irParaAdicionar, irParaR
               </div>
             </div>
           </div>
+        )}
+
+        {/* Status sync */}
+        {statusSync && (
+          <span className="text-sm opacity-80" title="Status sincronização">{statusSync}</span>
         )}
 
         {/* Nav buttons */}

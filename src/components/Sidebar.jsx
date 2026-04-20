@@ -5,7 +5,7 @@ import { CORES_USUARIO } from '../hooks/useUsuarios';
 
 const META_DIARIA = 3;
 
-export default function Sidebar({ gami, versiculos, praticasHoje, usuario, onSair, onExportar, onImportar }) {
+export default function Sidebar({ gami, versiculos, praticasHoje, usuario, onSair, onExportar, onImportar, statusSync }) {
   const nivel      = nivelFromXP(gami.xpTotal);
   const progresso  = progressoNivel(gami.xpTotal);
   const xpRestante = xpRestanteNivel(gami.xpTotal);
@@ -27,6 +27,17 @@ export default function Sidebar({ gami, versiculos, praticasHoje, usuario, onSai
           <div className="flex-1 min-w-0">
             <p className="font-bold text-slate-800 truncate">{usuario?.nome}</p>
             <p className="text-xs text-slate-400">Desde {usuario?.criadoEm}</p>
+            {statusSync && (
+              <p className={`text-xs mt-0.5 font-medium ${
+                statusSync === 'salvo'    ? 'text-green-600' :
+                statusSync === 'salvando' ? 'text-blue-500'  :
+                statusSync === 'erro'     ? 'text-red-500'   : 'text-slate-400'
+              }`}>
+                {statusSync === 'salvo'    ? '✅ Salvo na nuvem' :
+                 statusSync === 'salvando' ? '☁️ Salvando...'   :
+                 statusSync === 'pendente' ? '🔄 Aguardando...' : ''}
+              </p>
+            )}
           </div>
         </div>
 

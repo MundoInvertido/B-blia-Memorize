@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useUsuarios } from './hooks/useUsuarios';
 import { useVersiculos } from './hooks/useVersiculos';
 import { useGamificacao } from './hooks/useGamificacao';
 import { useTraducao } from './hooks/useTraducao';
-import { sincronizarUsuario } from './lib/cloudSync';
+import { useSyncNuvem } from './hooks/useSyncNuvem';
+import { sincronizarRanking } from './lib/cloudSync';
+import { firebaseConfigurado } from './lib/firebase';
 import TelaLogin from './components/TelaLogin';
 import Navegacao from './components/Navegacao';
 import Sidebar from './components/Sidebar';
@@ -15,30 +17,31 @@ import VistaPratica from './components/VistaPratica';
 import VistaRanking from './components/VistaRanking';
 import VistaSobre from './components/VistaSobre';
 
+const ICONE_SYNC = { idle: null, pendente: '🔄', salvando: '☁️', salvo: '✅', erro: '⚠️' };
+
 function AppConteudo({ usuario, onSair }) {
   const { versiculos, adicionar, apagar, registrarPraticaVersiculo, restaurar: restaurarV } = useVersiculos(usuario.id);
   const { gami, praticasHoje, registrarPratica, limparNovasConquistas, restaurar: restaurarG } = useGamificacao(versiculos, usuario.id);
   const { traducao, setTraducao } = useTraducao(usuario.id);
 
-  const [vista, setVista]               = useState('lista');
+  const { statusSync } = useSyncNuvem(
+    usuario, versiculos, gami, traducao,
+    restaurarV, restaurarG, setTraducao,
+  );
+
+  const [vista, setVista]                   = useState('lista');
   const [versiculoAtivo, setVersiculoAtivo] = useState(null);
-  const [modoPratica, setModoPratica]   = useState(null);
-  const importInputRef                  = useRef(null);
+  const [modoPratica, setModoPratica]       = useState(null);
+  const importInputRef                      = useRef(null);
 
-  // Sincroniza com Firebase após cada prática
-  useEffect(() => {
-    if (gami.totalPraticas > 0) {
-      sincronizarUsuario(usuario, gami, versiculos);
-    }
-  }, [gami.totalPraticas]);
-
-  const irParaLista      = () => { setVista('lista');    setVersiculoAtivo(null); setModoPratica(null); };
+  const irParaLista      = () => { setVista('lista'); setVersiculoAtivo(null); setModoPratica(null); };
   const abrirMenuPratica = (v) => { setVersiculoAtivo(v); setVista('menu_pratica'); };
   const iniciarPratica   = (modo) => { setModoPratica(modo); setVista('pratica'); };
 
   const handleConcluir = (resultado) => {
     registrarPraticaVersiculo(versiculoAtivo.id, resultado);
     registrarPratica(resultado);
+    sincronizarRanking(usuario, gami, versiculos); // atualiza ranking público
     irParaLista();
   };
 
@@ -79,6 +82,7 @@ function AppConteudo({ usuario, onSair }) {
         irParaSobre={() => setVista('sobre')}
         gami={gami}
         usuario={usuario}
+        statusSync={firebaseConfigurado ? ICONE_SYNC[statusSync] : null}
       />
 
       {gami.novasConquistas?.length > 0 && (
@@ -96,13 +100,12 @@ function AppConteudo({ usuario, onSair }) {
           onSair={onSair}
           onExportar={handleExportar}
           onImportar={() => importInputRef.current?.click()}
+          statusSync={firebaseConfigurado ? statusSync : null}
         />
 
         <main className="flex-1 min-w-0 pb-8">
-          {vista === 'lista' && (
-            <VistaLista versiculos={versiculos} onPraticar={abrirMenuPratica} onApagar={apagar} />
-          )}
-          {vista === 'adicionar' && (
+          {vista === 'lista'        && <VistaLista versiculos={versiculos} onPraticar={abrirMenuPratica} onApagar={apagar} />}
+          {vista === 'adicionar'    && (
             <VistaAdicionar
               traducao={traducao}
               setTraducao={setTraducao}
@@ -113,7 +116,7 @@ function AppConteudo({ usuario, onSair }) {
           {vista === 'menu_pratica' && versiculoAtivo && (
             <VistaMenuPratica versiculo={versiculoAtivo} onIniciar={iniciarPratica} onVoltar={irParaLista} />
           )}
-          {vista === 'pratica' && versiculoAtivo && (
+          {vista === 'pratica'      && versiculoAtivo && (
             <VistaPratica
               versiculo={versiculoAtivo}
               modo={modoPratica}
@@ -121,12 +124,8 @@ function AppConteudo({ usuario, onSair }) {
               onConcluir={handleConcluir}
             />
           )}
-          {vista === 'ranking' && (
-            <VistaRanking usuarioAtivo={usuario} />
-          )}
-          {vista === 'sobre' && (
-            <VistaSobre />
-          )}
+          {vista === 'ranking'      && <VistaRanking usuarioAtivo={usuario} />}
+          {vista === 'sobre'        && <VistaSobre />}
         </main>
       </div>
     </div>

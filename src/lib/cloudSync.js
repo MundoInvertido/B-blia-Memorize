@@ -1,11 +1,41 @@
 import {
-  doc, setDoc, collection, getDocs,
+  doc, setDoc, getDoc, collection,
   query, orderBy, limit, onSnapshot,
 } from 'firebase/firestore';
 import { db, firebaseConfigurado } from './firebase';
 
-// Salva progresso do usuário no Firestore (ranking público)
-export async function sincronizarUsuario(usuario, gami, versiculos) {
+// ── Backup completo ──────────────────────────────────────────────────────────
+
+export async function salvarDadosNuvem(userId, { nome, versiculos, gami, traducao }) {
+  if (!firebaseConfigurado || !db) return;
+  try {
+    await setDoc(doc(db, 'usuarios', userId), {
+      userId,
+      nome,
+      versiculos,
+      gami:        { ...gami, novasConquistas: [] }, // não salvar notificações temporárias
+      traducao,
+      atualizadoEm: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.warn('Backup falhou (offline?):', e.message);
+  }
+}
+
+export async function carregarDadosNuvem(userId) {
+  if (!firebaseConfigurado || !db) return null;
+  try {
+    const snap = await getDoc(doc(db, 'usuarios', userId));
+    return snap.exists() ? snap.data() : null;
+  } catch (e) {
+    console.warn('Restauração falhou:', e.message);
+    return null;
+  }
+}
+
+// ── Ranking público ──────────────────────────────────────────────────────────
+
+export async function sincronizarRanking(usuario, gami, versiculos) {
   if (!firebaseConfigurado || !db) return;
   try {
     await setDoc(doc(db, 'ranking', usuario.id), {
@@ -19,11 +49,10 @@ export async function sincronizarUsuario(usuario, gami, versiculos) {
       atualizadoEm:        new Date().toISOString(),
     }, { merge: true });
   } catch (e) {
-    console.warn('Sync falhou (offline?):', e.message);
+    console.warn('Ranking sync falhou:', e.message);
   }
 }
 
-// Busca top 50 do ranking em tempo real
 export function ouvirRanking(callback) {
   if (!firebaseConfigurado || !db) {
     callback([]);
@@ -35,7 +64,9 @@ export function ouvirRanking(callback) {
     orderBy('xpTotal', 'desc'),
     limit(50),
   );
-  return onSnapshot(q, snap => {
-    callback(snap.docs.map((d, i) => ({ posicao: i + 1, id: d.id, ...d.data() })));
-  }, () => callback([]));
+  return onSnapshot(
+    q,
+    snap => callback(snap.docs.map((d, i) => ({ posicao: i + 1, id: d.id, ...d.data() }))),
+    () => callback([]),
+  );
 }
