@@ -28,5 +28,8 @@ dist-ssr
 .gemini
 
 # Capacitor
-android/
 ios/
+# Android build outputs (manter o projeto, ignorar só os artefatos)
+android/build/
+android/app/build/
+android/.gradle/
