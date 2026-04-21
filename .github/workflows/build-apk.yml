@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [bíblia_memorize]
+    branches: [biblica_memorize]
   workflow_dispatch:
 
 jobs:
@@ -40,6 +40,9 @@ jobs:
 
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Generate Icons
+        run: npx @capacitor/assets generate
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
