@@ -24,6 +24,10 @@ function hashSenha(senha) {
   return Math.abs(h).toString(36).padStart(10, '0');
 }
 
+function normNome(nome) {
+  return nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
 function lerUsuarios() {
   try { return JSON.parse(localStorage.getItem(CHAVE_USUARIOS) ?? '[]'); }
   catch { return []; }
@@ -65,7 +69,7 @@ export function useUsuarios() {
     }
 
     const novo = {
-      id:        Date.now().toString(),
+      id:        normNome(nomeTrim),
       nome:      nomeTrim,
       senhaHash: hashSenha(senha),
       temSenha:  !!senha,
@@ -102,7 +106,7 @@ export function useUsuarios() {
 
       // Restaurar usuário localmente
       usuario = {
-        id:        conta.userId,
+        id:        normNome(conta.nome),
         nome:      conta.nome,
         senhaHash: conta.senhaHash,
         temSenha:  conta.temSenha,

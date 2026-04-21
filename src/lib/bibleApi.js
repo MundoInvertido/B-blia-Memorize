@@ -186,17 +186,21 @@ function normalizarChave(str) {
 }
 
 function normalizarReferencia(ref) {
-  // Aceita: Sl 1:1, Sl 1:1-2, Sl 1.1, Sl 1.1-2 (intervalo com ponto), Sl 1:1:5 (versículo específico)
-  const match = ref.trim().match(/^([1-3]?\s*[a-zA-ZÀ-ÿ]+)\s+(\d+(?:\.\d+(?:-\d+)?)?|\d+:\d+(?:-\d+)?)$/);
+  // Aceita: Sl 1:1, Sl 1:1-2, Sl 1.1, Sl 1.1-2, 1Co 15:1, 1Co 15:1-11, 1João 3:16
+  const match = ref.trim().match(/^([1-3]\s*[a-zA-ZÀ-ÿ]+|[1-3]?[a-zA-ZÀ-ÿ]+)\s+(\d+(?:\.\d+(?:-\d+)?)?|\d+:\d+(?:-?\d+)?)$/);
   if (!match) return ref;
 
-  const livroRaw = match[1].trim();
+  // Normalizar: "1Co" -> "1 Co", "1João" -> "1 João"
+  let livroRaw = match[1].trim();
+  livroRaw = livroRaw.replace(/^([1-3])([a-zA-ZÀ-ÿ])/i, '$1 $2');
+
   const trecho = match[2];
   const chave = normalizarChave(livroRaw);
   const livroEn = MAPA_LIVROS[chave] ?? livroRaw;
 
   let versaoApi = trecho;
   if (trecho.includes('.')) {
+    // Converter "15.1-11" para "15:1-11"
     versaoApi = trecho.replace('.', ':');
   }
   return `${livroEn} ${versaoApi}`;
@@ -284,11 +288,14 @@ export async function buscarVersiculoLocal(referencia, traducao = 'almeida') {
   const dados = await carregarTraducao(nomeArq);
   if (!dados) throw new Error('Erro ao carregar tradução.');
 
-  // Parse: Sl 1:1, Sl 1:1-2, Sl 1.1, Sl 1:1-2
-  const match = referencia.trim().match(/^([1-3]?\s*[a-zA-ZÀ-ÿ]+)\s+(\d+)(?::(\d+(?:-\d+)?)|\.(\d+(?:-\d+)?))?$/);
-  if (!match) throw new Error('Formato inválido. Use: Sl 1:1');
+  // Parse: Sl 1:1, 1Co 15:1, 1Co 15:1-11, Sl 1:1-2, 1João 3:16
+  const match = referencia.trim().match(/^([1-3]\s*[a-zA-ZÀ-ÿ]+|[1-3]?[a-zA-ZÀ-ÿ]+)\s+(\d+)(?::(\d+(?:-\d+)?)|\.(\d+(?:-\d+)?))?$/);
+  if (!match) throw new Error('Formato inválido. Use: Sl 1:1 ou 1Co 15:1 ou 1Co 15.1-11');
 
-  const livroRaw = match[1].trim();
+  let livroRaw = match[1].trim();
+  // Normalizar: "1Co" -> "1 Co", "1João" -> "1 João"
+  livroRaw = livroRaw.replace(/^([1-3])([a-zA-ZÀ-ÿ])/i, '$1 $2');
+
   const cap = parseInt(match[2]) - 1; // 0-indexed
 
   let verInicio = 0, verFim = null;

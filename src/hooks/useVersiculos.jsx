@@ -34,15 +34,21 @@ function carregar(userId) {
   } catch { return DADOS_INICIAIS; }
 }
 
-// Detecta se é um intervalo (ex: "Sl 1:1-2", "João 3:16-18")
+// Detecta se é um intervalo (ex: "Sl 1:1-2", "João 3:16-18", "1Co 15:1-11", "Sl 1.1-2")
 function parseIntervalo(referencia) {
-  const match = referencia.trim().match(/^([1-3]?\s*[a-zA-ZÀ-ÿ]+)\s+(\d+):(\d+)(?:-(\d+))?$/);
+  const match = referencia.trim().match(/^([1-3]\s*[a-zA-ZÀ-ÿ]+|[1-3]?[a-zA-ZÀ-ÿ]+)\s+(\d+)(?::(\d+(?:-(\d+))?)|\.(\d+(?:-(\d+))?))?$/);
   if (!match) return null;
   
-  const [, livro, cap, ini, fim] = match;
-  if (!fim) return null; // Não é intervalo
+  let livro = match[1].trim();
+  livro = livro.replace(/^([1-3])([a-zA-ZÀ-ÿ])/i, '$1 $2');
   
-  return { livro, cap: parseInt(cap), ini: parseInt(ini), fim: parseInt(fim) };
+  const [, , cap, v1, , , v2] = match;
+  if (!v1) return null; // Não é intervalo
+  
+  const ini = parseInt(v1);
+  const fim = v2 ? parseInt(v2) : ini;
+  
+  return { livro, cap: parseInt(cap), ini, fim };
 }
 
 export function useVersiculos(userId) {

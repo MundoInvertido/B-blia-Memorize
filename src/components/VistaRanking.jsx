@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Trophy, Star, Flame, BookOpen, Loader2, WifiOff } from 'lucide-react';
+import { useEffect, useState, memo, useCallback } from 'react';
+import { Trophy, Star, Flame, BookOpen, Loader2, WifiOff, RefreshCw } from 'lucide-react';
 import { ouvirRanking } from '../lib/cloudSync';
 import { firebaseConfigurado } from '../lib/firebase';
 import { nivelFromXP } from '../lib/gamification';
@@ -11,18 +11,29 @@ function Medalha({ posicao }) {
   return <span className="text-slate-400 font-bold text-sm w-8 text-center">{posicao}º</span>;
 }
 
-export default function VistaRanking({ usuarioAtivo }) {
+export default memo(function VistaRanking({ usuarioAtivo }) {
   const [ranking, setRanking]   = useState([]);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    setCarregando(true);
     const unsub = ouvirRanking((dados) => {
       setRanking(dados);
       setCarregando(false);
     });
     return unsub;
   }, []);
+
+  const [recarregando, setRecarregando] = useState(false);
+
+  const recarregar = () => {
+    setRecarregando(true);
+    setCarregando(true);
+    const unsub = ouvirRanking((dados) => {
+      setRanking(dados);
+      setCarregando(false);
+      setRecarregando(false);
+    });
+  };
 
   if (!firebaseConfigurado) {
     return (
@@ -44,12 +55,17 @@ export default function VistaRanking({ usuarioAtivo }) {
 
       {/* Header */}
       <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-2xl p-6 shadow-lg">
-        <div className="flex items-center gap-3">
-          <Trophy size={32} />
-          <div>
-            <h2 className="text-2xl font-black">Ranking Global</h2>
-            <p className="text-yellow-100 text-sm">Top memorização da Bíblia</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Trophy size={32} />
+            <div>
+              <h2 className="text-2xl font-black">Ranking Global</h2>
+              <p className="text-yellow-100 text-sm">Top memorização da Bíblia</p>
+            </div>
           </div>
+          <button onClick={recarregar} disabled={recarregando} className="p-2 hover:bg-white/20 rounded-lg transition">
+            <RefreshCw className={recarregando ? 'animate-spin' : ''} size={20} />
+          </button>
         </div>
       </div>
 
@@ -136,4 +152,4 @@ export default function VistaRanking({ usuarioAtivo }) {
       </p>
     </div>
   );
-}
+});

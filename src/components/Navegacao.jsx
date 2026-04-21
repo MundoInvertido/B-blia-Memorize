@@ -1,7 +1,7 @@
-import { BookOpen, List, Plus, Star, Trophy, Info } from 'lucide-react';
+import { BookOpen, List, Plus, Star, Info } from 'lucide-react';
 import { nivelFromXP, progressoNivel } from '../lib/gamification';
 
-export default function Navegacao({ vista, irParaLista, irParaAdicionar, irParaRanking, irParaSobre, gami, statusSync }) {
+export default function Navegacao({ vista, irParaLista, irParaAdicionar, irParaSobre, gami, statusSync }) {
   const nivel    = nivelFromXP(gami?.xpTotal ?? 0);
   const progresso = progressoNivel(gami?.xpTotal ?? 0);
   const streak   = gami?.streakAtual ?? 0;
@@ -59,7 +59,6 @@ export default function Navegacao({ vista, irParaLista, irParaAdicionar, irParaR
         <div className="flex gap-1">
           {btn('lista',    irParaLista,    <List size={18} />,   'Versículos')}
           {btn('adicionar', irParaAdicionar, <Plus size={18} />,  'Adicionar')}
-          {btn('ranking',  irParaRanking,  <Trophy size={18} />, 'Ranking')}
           {btn('sobre',    irParaSobre,    <Info size={18} />,   'Sobre')}
         </div>
       </div>

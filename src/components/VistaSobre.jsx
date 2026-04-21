@@ -47,7 +47,6 @@ export default function VistaSobre() {
             '🔄 Revisão espaçada inteligente — cada versículo volta no momento certo',
             '🏆 Sistema de XP, níveis e conquistas para manter a motivação',
             '🔥 Streak diário para criar um hábito consistente',
-            '📊 Ranking global entre todos os usuários',
             '📱 Funciona como app Android (APK) e no navegador',
           ].map((item, i) => (
             <li key={i} className="flex items-start gap-2">
@@ -88,7 +87,7 @@ export default function VistaSobre() {
       }`}>
         {firebaseConfigurado
           ? '✅ Sincronização em nuvem ativa — seus dados são salvos permanentemente.'
-          : '⚠️ Dados salvos localmente. Configure o Firebase para salvar na nuvem e acessar o ranking.'}
+          : '⚠️ Dados salvos localmente. Configure o Firebase para salvar na nuvem.'}
       </div>
 
       {/* GitHub */}

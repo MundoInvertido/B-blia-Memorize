@@ -1,10 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useUsuarios } from './hooks/useUsuarios';
 import { useVersiculos } from './hooks/useVersiculos';
 import { useGamificacao } from './hooks/useGamificacao';
 import { useTraducao } from './hooks/useTraducao';
 import { useSyncNuvem } from './hooks/useSyncNuvem';
-import { sincronizarRanking } from './lib/cloudSync';
 import { firebaseConfigurado } from './lib/firebase';
 import TelaLogin from './components/TelaLogin';
 import Navegacao from './components/Navegacao';
@@ -14,7 +13,6 @@ import VistaLista from './components/VistaLista';
 import VistaAdicionar from './components/VistaAdicionar';
 import VistaMenuPratica from './components/VistaMenuPratica';
 import VistaPratica from './components/VistaPratica';
-import VistaRanking from './components/VistaRanking';
 import VistaSobre from './components/VistaSobre';
 
 const ICONE_SYNC = { idle: null, pendente: '🔄', salvando: '☁️', salvo: '✅', erro: '⚠️' };
@@ -35,13 +33,12 @@ function AppConteudo({ usuario, onSair }) {
   const importInputRef                      = useRef(null);
 
   const irParaLista      = () => { setVista('lista'); setVersiculoAtivo(null); setModoPratica(null); };
-  const abrirMenuPratica = (v) => { setVersiculoAtivo(v); setVista('menu_pratica'); };
-  const iniciarPratica   = (modo) => { setModoPratica(modo); setVista('pratica'); };
+  const abrirMenuPratica = (v) => { setVersiculoAtivo(v); setVista('menu_pratica') };
+  const iniciarPratica   = (modo) => { setModoPratica(modo); setVista('pratica') };
 
   const handleConcluir = (resultado) => {
     registrarPraticaVersiculo(versiculoAtivo.id, resultado);
     registrarPratica(resultado);
-    sincronizarRanking(usuario, gami, versiculos); // atualiza ranking público
     irParaLista();
   };
 
@@ -78,7 +75,7 @@ function AppConteudo({ usuario, onSair }) {
         vista={vista}
         irParaLista={irParaLista}
         irParaAdicionar={() => setVista('adicionar')}
-        irParaRanking={() => setVista('ranking')}
+        
         irParaSobre={() => setVista('sobre')}
         gami={gami}
         usuario={usuario}
@@ -124,7 +121,7 @@ function AppConteudo({ usuario, onSair }) {
               onConcluir={handleConcluir}
             />
           )}
-          {vista === 'ranking'      && <VistaRanking usuarioAtivo={usuario} />}
+          
           {vista === 'sobre'        && <VistaSobre />}
         </main>
       </div>
@@ -148,5 +145,5 @@ export default function App() {
     );
   }
 
-  return <AppConteudo key={usuarioAtivo.id} usuario={usuarioAtivo} onSair={sair} />;
+  return <AppConteudo usuario={usuarioAtivo} onSair={sair} />;
 }

@@ -2,6 +2,7 @@ import {
   doc, setDoc, getDoc, collection,
   query, orderBy, limit, onSnapshot,
 } from 'firebase/firestore';
+import { db, firebaseConfigurado } from './firebase';
 
 // ── Contas de usuário (login cross-device) ───────────────────────────────────
 
@@ -32,8 +33,6 @@ export async function buscarContaPorNome(nome) {
     return snap.exists() ? snap.data() : null;
   } catch { return null; }
 }
-import { db, firebaseConfigurado } from './firebase';
-
 // ── Backup completo ──────────────────────────────────────────────────────────
 
 export async function salvarDadosNuvem(userId, { nome, versiculos, gami, traducao }) {
@@ -83,20 +82,52 @@ export async function sincronizarRanking(usuario, gami, versiculos) {
   }
 }
 
+export async function buscarRanking() {
+  const projectId = 'memobiblia-59245';
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/ranking?limit=50`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.documents) return [];
+
+    const docs = data.documents.map(doc => {
+      const f = doc.fields || {};
+      return {
+        id: doc.name.split('/').pop(),
+        nome: f.nome?.stringValue || '',
+        xpTotal: Number(f.xpTotal?.integerValue || f.xpTotal?.doubleValue || 0),
+        versiculosDominados: Number(f.versiculosDominados?.integerValue || 0),
+        streakAtual: Number(f.streakAtual?.integerValue || 0),
+        totalPraticas: Number(f.totalPraticas?.integerValue || 0),
+      };
+    });
+
+    docs.sort((a, b) => b.xpTotal - a.xpTotal || b.versiculosDominados - a.versiculosDominados);
+    return docs;
+  } catch {
+    return [];
+  }
+}
+
 export function ouvirRanking(callback) {
   if (!firebaseConfigurado || !db) {
     callback([]);
     return () => {};
   }
-  const q = query(
-    collection(db, 'ranking'),
-    orderBy('versiculosDominados', 'desc'),
-    orderBy('xpTotal', 'desc'),
-    limit(50),
-  );
-  return onSnapshot(
-    q,
-    snap => callback(snap.docs.map((d, i) => ({ posicao: i + 1, id: d.id, ...d.data() }))),
-    () => callback([]),
-  );
+  const q = query(collection(db, 'ranking'), orderBy('versiculosDominados', 'desc'), limit(50));
+  return onSnapshot(q, (snap) => {
+    const docs = snap.docs.map((d) => {
+      const f = d.data();
+      return {
+        id: d.id,
+        nome: f.nome || '',
+        xpTotal: f.xpTotal ?? 0,
+        versiculosDominados: f.versiculosDominados ?? 0,
+        streakAtual: f.streakAtual ?? 0,
+        totalPraticas: f.totalPraticas ?? 0,
+      };
+    });
+    callback(docs);
+  });
 }
