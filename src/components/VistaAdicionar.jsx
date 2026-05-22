@@ -2,14 +2,19 @@ import { useState } from 'react';
 import { Plus, ArrowLeft, Search, Loader2, AlertCircle, CheckCircle, ChevronDown, BookOpen, Zap } from 'lucide-react';
 import { buscarVersiculo, buscarVersiculoLocal, TRADUCOES, urlYouVersion } from '../lib/bibleApi';
 import ModalBiblia from './ModalBiblia';
+import GerenciadorTags, { SeletorTag } from './GerenciadorTags';
 
-export default function VistaAdicionar({ traducao, setTraducao, onAdicionar, onVoltar }) {
+export default function VistaAdicionar({ traducao, setTraducao, tags, pastas, getTagCor, criarTag, criarPasta, onAdicionar, onVoltar }) {
   const [referencia, setReferencia] = useState('');
   const [texto, setTexto] = useState('');
   const [buscando, setBuscando] = useState(false);
   const [erroBusca, setErroBusca] = useState('');
   const [textoBuscado, setTextoBuscado] = useState(false);
   const [modalAberto, setModalAberto] = useState(false);
+  const [tagsSelecionadas, setTagsSelecionadas] = useState([]);
+  const [pastaSelecionada, setPastaSelecionada] = useState(null);
+  const [imagemUrl, setImagemUrl] = useState('');
+  const [corFundo, setCorFundo] = useState('from-blue-600 to-indigo-800');
 
   const traducaoAtual = TRADUCOES.find(t => t.id === traducao) ?? TRADUCOES[0];
   const usaModal = !traducaoAtual.autoFetch && !!traducaoAtual.yvId;
@@ -54,7 +59,7 @@ export default function VistaAdicionar({ traducao, setTraducao, onAdicionar, onV
       }
       setTexto(resultado);
       setTextoBuscado(true);
-      onAdicionar(refRetorno, resultado);
+      onAdicionar(refRetorno, resultado, tagsSelecionadas, pastaSelecionada, imagemUrl, corFundo);
     } catch (err) {
       setErroBusca(err.message);
     } finally {
@@ -69,7 +74,13 @@ export default function VistaAdicionar({ traducao, setTraducao, onAdicionar, onV
 
   const submeter = (e) => {
     e.preventDefault();
-    if (referencia.trim() && texto.trim()) onAdicionar(referencia, texto);
+    if (referencia.trim() && texto.trim()) onAdicionar(referencia, texto, tagsSelecionadas, pastaSelecionada, imagemUrl, corFundo);
+  };
+
+  const toggleTag = (tagId) => {
+    setTagsSelecionadas(prev =>
+      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
+    );
   };
 
   return (
@@ -199,6 +210,119 @@ export default function VistaAdicionar({ traducao, setTraducao, onAdicionar, onV
                 className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none text-sm leading-relaxed"
                 required
               />
+            </div>
+
+            {/* Tags e Coleção */}
+            {(tags.length > 0 || pastas.length > 0) && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">Tags</label>
+                  <SeletorTag
+                    tags={tags}
+                    tagsSelecionadas={tagsSelecionadas}
+                    onToggle={toggleTag}
+                    getTagCor={getTagCor}
+                  />
+                </div>
+                {pastas.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">Coleção</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {pastas.map(p => {
+                        const cor = getTagCor(p.corId);
+                        const selecionada = pastaSelecionada === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setPastaSelecionada(selecionada ? null : p.id)}
+                            className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg font-medium transition-all ${cor.bg} ${selecionada ? cor.text : 'opacity-50 hover:opacity-80'}`}
+                          >
+                            {p.emoji} {p.nome}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Gerenciador de Tags */}
+            <div className="pt-2 border-t border-slate-100">
+              <GerenciadorTags
+                tags={tags}
+                pastas={pastas}
+                onCriarTag={criarTag}
+                onEditarTag={() => {}}
+                onApagarTag={() => {}}
+                onCriarPasta={criarPasta}
+                onEditarPasta={() => {}}
+                onApagarPasta={() => {}}
+                getTagCor={getTagCor}
+              />
+            </div>
+
+            {/* Personalização Visual */}
+            <div className="pt-4 border-t border-slate-100 space-y-4">
+              <label className="block text-sm font-semibold text-slate-700">Personalização Visual (Memória Visual)</label>
+              
+              {/* Gradients presets */}
+              <div>
+                <span className="block text-xs font-semibold text-slate-500 mb-2">Gradiente de Fundo (Padrão)</span>
+                <div className="flex gap-2.5 flex-wrap">
+                  {[
+                    { id: 'from-blue-600 to-indigo-800', label: 'Brisa Marinha' },
+                    { id: 'from-amber-500 to-rose-600', label: 'Pôr do Sol' },
+                    { id: 'from-purple-600 to-pink-600', label: 'Realeza' },
+                    { id: 'from-emerald-600 to-teal-800', label: 'Floresta' },
+                    { id: 'from-slate-700 to-slate-900', label: 'Cinza Profundo' },
+                  ].map((grad) => (
+                    <button
+                      key={grad.id}
+                      type="button"
+                      onClick={() => { setCorFundo(grad.id); setImagemUrl(''); }}
+                      className={`text-xs px-3 py-2 rounded-xl font-bold transition text-white bg-gradient-to-r ${grad.id} ${
+                        corFundo === grad.id && !imagemUrl ? 'ring-4 ring-blue-400 ring-offset-2 scale-105' : 'opacity-70 hover:opacity-100'
+                      }`}
+                    >
+                      {grad.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Image search query / Custom URL */}
+              <div>
+                <span className="block text-xs font-semibold text-slate-500 mb-1.5">Imagem Ilustrativa (Opcional - link ou termo de busca)</span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ex: nature, cross, faith, bible, sky ou link completo..."
+                    value={imagemUrl}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setImagemUrl(val);
+                      if (!val.trim()) {
+                        setCorFundo('from-blue-600 to-indigo-800');
+                      }
+                    }}
+                    className="flex-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                  />
+                  {imagemUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setImagemUrl('')}
+                      className="px-3 py-2 text-xs font-semibold text-slate-500 bg-slate-100 rounded-xl hover:bg-slate-200"
+                    >
+                      Limpar
+                    </button>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-slate-400">
+                  Escreva um termo em inglês (ex: 'cross') ou cole um link de imagem do Unsplash para memorização visual.
+                </p>
+              </div>
             </div>
 
             <button

@@ -77,7 +77,7 @@ export function useSyncNuvem(usuario, versiculos, gami, traducao, restaurarV, re
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timerRef.current);
-  }, [versiculos, gami.xpTotal, gami.totalPraticas, traducao]);
+  }, [versiculos, gami?.xpTotal, gami?.totalPraticas, traducao]);
 
   return { statusSync };
 }

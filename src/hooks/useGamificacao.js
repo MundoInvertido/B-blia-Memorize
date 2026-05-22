@@ -5,6 +5,7 @@ const INICIAL = {
   xpTotal: 0, streakAtual: 0, streakMaximo: 0,
   ultimaDiaPratica: null, totalPraticas: 0,
   conquistasDesbloqueadas: [], novasConquistas: [],
+  historicoDiario: {},
 };
 
 function chave(userId) { return `memo_biblia_gami_v1_${userId}`; }
@@ -42,6 +43,15 @@ export function useGamificacao(versiculos, userId) {
       const novoXP    = prev.xpTotal + (XP_POR_RESULTADO[resultado] ?? 10);
       const novoTotal = prev.totalPraticas + 1;
 
+      // Update daily history
+      const historicoDiario = {
+        ...prev.historicoDiario,
+        [hoje]: (prev.historicoDiario[hoje] || 0) + 1
+      };
+      // Prune entries older than 180 days
+      const cutoff = new Date(Date.now() - 180 * 86400000).toISOString().split('T')[0];
+      Object.keys(historicoDiario).forEach(k => { if (k < cutoff) delete historicoDiario[k]; });
+
       const stats = {
         xpTotal: novoXP, streakAtual: novoStreak, totalPraticas: novoTotal,
         totalVersiculos: versiculos.length,
@@ -54,6 +64,7 @@ export function useGamificacao(versiculos, userId) {
         streakAtual: novoStreak,
         streakMaximo: Math.max(prev.streakMaximo, novoStreak),
         ultimaDiaPratica: hoje, totalPraticas: novoTotal,
+        historicoDiario,
         conquistasDesbloqueadas: [...prev.conquistasDesbloqueadas, ...novasConquistas],
         novasConquistas,
       };
@@ -72,7 +83,7 @@ export function useGamificacao(versiculos, userId) {
 
   const praticasHoje = (() => {
     const hoje = new Date().toISOString().split('T')[0];
-    return gami.ultimaDiaPratica === hoje ? gami.totalPraticas : 0;
+    return gami.historicoDiario?.[hoje] || 0;
   })();
 
   return { gami, praticasHoje, registrarPratica, limparNovasConquistas, restaurar };

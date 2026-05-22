@@ -1,11 +1,13 @@
-import { Star, Target, Trophy, LogOut, Download, Upload } from 'lucide-react';
+import { Star, Target, Trophy, LogOut, Download, Upload, BookOpen, Tag, Folder } from 'lucide-react';
 import { nivelFromXP, progressoNivel, xpRestanteNivel, CONQUISTAS as CLIST } from '../lib/gamification';
 import { estaVencido, NIVEL_LABELS, NIVEL_CORES } from '../lib/srs';
 import { CORES_USUARIO } from '../hooks/useUsuarios';
+import MapaCalor from './MapaCalor';
+import { useEstatisticas, formatarImpacto } from '../hooks/useEstatisticas';
 
 const META_DIARIA = 3;
 
-export default function Sidebar({ gami, versiculos, praticasHoje, usuario, onSair, onExportar, onImportar, statusSync }) {
+export default function Sidebar({ gami, versiculos, praticasHoje, usuario, onSair, onExportar, onImportar, statusSync, tags = [], pastas = [], getTagCor }) {
   const nivel      = nivelFromXP(gami.xpTotal);
   const progresso  = progressoNivel(gami.xpTotal);
   const xpRestante = xpRestanteNivel(gami.xpTotal);
@@ -14,6 +16,9 @@ export default function Sidebar({ gami, versiculos, praticasHoje, usuario, onSai
 
   const conquistasDesbloqueadas = CLIST.filter(c => gami.conquistasDesbloqueadas.includes(c.id));
   const corUsuario = CORES_USUARIO.find(c => c.id === usuario?.cor) ?? CORES_USUARIO[0];
+
+  const estatisticas = useEstatisticas(versiculos);
+  const impacto = formatarImpacto(estatisticas);
 
   return (
     <aside className="hidden lg:flex flex-col gap-4 w-64 flex-shrink-0">
@@ -114,6 +119,11 @@ export default function Sidebar({ gami, versiculos, praticasHoje, usuario, onSai
         </p>
       </div>
 
+      {/* Mapa de Calor */}
+      {gami.historicoDiario && (
+        <MapaCalor historicoDiario={gami.historicoDiario} dias={90} />
+      )}
+
       {/* Stats */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Estatísticas</p>
@@ -131,6 +141,82 @@ export default function Sidebar({ gami, versiculos, praticasHoje, usuario, onSai
           ))}
         </div>
       </div>
+
+      {/* Impacto */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <BookOpen size={15} className="text-emerald-500" />
+          <span className="text-sm font-bold text-slate-700">Impacto</span>
+        </div>
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-500">Palavras guardadas</span>
+            <span className="font-bold text-emerald-600">{impacto.palavrasMemorizadas}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-500">Total em memória</span>
+            <span className="font-bold text-slate-800">{impacto.pct}%</span>
+          </div>
+          {impacto.livroFavorito && impacto.livroTexto && (
+            <div className="mt-2 pt-2 border-t border-slate-100">
+              <p className="text-xs text-slate-400 mb-1">Livro favorito</p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full"
+                    style={{ width: `${impacto.pct}%` }}
+                  />
+                </div>
+                <span className="text-xs font-medium text-slate-600">{impacto.livroFavorito} {impacto.pct}%</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tags e Coleções */}
+      {(tags.length > 0 || pastas.length > 0) && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Tag size={14} className="text-violet-500" />
+            <span className="text-sm font-bold text-slate-700">Tags</span>
+          </div>
+          <div className="space-y-2">
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {tags.map(t => {
+                  const cor = getTagCor ? getTagCor(t.corId) : {};
+                  const count = versiculos.filter(v => (v.tags || []).includes(t.id)).length;
+                  return (
+                    <span
+                      key={t.id}
+                      className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium ${cor.bg || 'bg-blue-100'} ${cor.text || 'text-blue-700'}`}
+                    >
+                      {t.emoji} {t.nome} <span className="opacity-60">{count}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            {pastas.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {pastas.map(p => {
+                  const cor = getTagCor ? getTagCor(p.corId) : {};
+                  const count = versiculos.filter(v => v.pastaId === p.id).length;
+                  return (
+                    <span
+                      key={p.id}
+                      className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg font-medium ${cor.bg || 'bg-green-100'} ${cor.text || 'text-green-700'}`}
+                    >
+                      <Folder size={10} /> {p.emoji} {p.nome} <span className="opacity-60">{count}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Conquistas */}
       {conquistasDesbloqueadas.length > 0 && (

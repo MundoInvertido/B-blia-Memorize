@@ -4,6 +4,7 @@ import { useVersiculos } from './hooks/useVersiculos';
 import { useGamificacao } from './hooks/useGamificacao';
 import { useTraducao } from './hooks/useTraducao';
 import { useSyncNuvem } from './hooks/useSyncNuvem';
+import { useTags } from './hooks/useTags';
 import { firebaseConfigurado } from './lib/firebase';
 import TelaLogin from './components/TelaLogin';
 import Navegacao from './components/Navegacao';
@@ -14,11 +15,12 @@ import VistaAdicionar from './components/VistaAdicionar';
 import VistaMenuPratica from './components/VistaMenuPratica';
 import VistaPratica from './components/VistaPratica';
 import VistaSobre from './components/VistaSobre';
+import VistaConfiguracoes from './components/VistaConfiguracoes';
 
 const ICONE_SYNC = { idle: null, pendente: '🔄', salvando: '☁️', salvo: '✅', erro: '⚠️' };
 
 function AppConteudo({ usuario, onSair }) {
-  const { versiculos, adicionar, apagar, registrarPraticaVersiculo, restaurar: restaurarV } = useVersiculos(usuario.id);
+  const { versiculos, adicionar, apagar, atualizarVersiculo, registrarPraticaVersiculo, restaurar: restaurarV } = useVersiculos(usuario.id);
   const { gami, praticasHoje, registrarPratica, limparNovasConquistas, restaurar: restaurarG } = useGamificacao(versiculos, usuario.id);
   const { traducao, setTraducao } = useTraducao(usuario.id);
 
@@ -26,6 +28,8 @@ function AppConteudo({ usuario, onSair }) {
     usuario, versiculos, gami, traducao,
     restaurarV, restaurarG, setTraducao,
   );
+
+  const { tags, pastas, criarTag, apagarTag, criarPasta, apagarPasta, getTagCor } = useTags(usuario.id);
 
   const [vista, setVista]                   = useState('lista');
   const [versiculoAtivo, setVersiculoAtivo] = useState(null);
@@ -75,7 +79,7 @@ function AppConteudo({ usuario, onSair }) {
         vista={vista}
         irParaLista={irParaLista}
         irParaAdicionar={() => setVista('adicionar')}
-        
+        irParaConfiguracoes={() => setVista('configuracoes')}
         irParaSobre={() => setVista('sobre')}
         gami={gami}
         usuario={usuario}
@@ -98,15 +102,23 @@ function AppConteudo({ usuario, onSair }) {
           onExportar={handleExportar}
           onImportar={() => importInputRef.current?.click()}
           statusSync={firebaseConfigurado ? statusSync : null}
+          tags={tags}
+          pastas={pastas}
+          getTagCor={getTagCor}
         />
 
         <main className="flex-1 min-w-0 pb-8">
-          {vista === 'lista'        && <VistaLista versiculos={versiculos} onPraticar={abrirMenuPratica} onApagar={apagar} />}
+          {vista === 'lista'        && <VistaLista versiculos={versiculos} onPraticar={abrirMenuPratica} onApagar={apagar} atualizarVersiculo={atualizarVersiculo} tags={tags} pastas={pastas} getTagCor={getTagCor} />}
           {vista === 'adicionar'    && (
             <VistaAdicionar
               traducao={traducao}
               setTraducao={setTraducao}
-              onAdicionar={(r, t) => { adicionar(r, t); irParaLista(); }}
+              tags={tags}
+              pastas={pastas}
+              getTagCor={getTagCor}
+              criarTag={criarTag}
+              criarPasta={criarPasta}
+              onAdicionar={(r, t, tagsSelecionadas, pastaId, imagemUrl, corFundo) => { adicionar(r, t, tagsSelecionadas, pastaId, imagemUrl, corFundo); irParaLista(); }}
               onVoltar={irParaLista}
             />
           )}
@@ -116,12 +128,21 @@ function AppConteudo({ usuario, onSair }) {
           {vista === 'pratica'      && versiculoAtivo && (
             <VistaPratica
               versiculo={versiculoAtivo}
+              versiculos={versiculos}
               modo={modoPratica}
               onVoltar={() => abrirMenuPratica(versiculoAtivo)}
               onConcluir={handleConcluir}
             />
           )}
           
+          {vista === 'configuracoes' && (
+            <VistaConfiguracoes
+              usuario={usuario}
+              onVoltar={irParaLista}
+              versiculos={versiculos}
+              totalPraticas={gami?.totalPraticas || 0}
+            />
+          )}
           {vista === 'sobre'        && <VistaSobre />}
         </main>
       </div>

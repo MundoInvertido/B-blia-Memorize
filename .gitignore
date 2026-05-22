@@ -28,6 +28,7 @@ dist-ssr
 # Project specific
 .remember
 .gemini
+.claude/
 
 # Capacitor
 ios/

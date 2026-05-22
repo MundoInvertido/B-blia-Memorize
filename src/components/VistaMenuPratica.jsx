@@ -1,4 +1,4 @@
-import { BookOpen, EyeOff, Type, ArrowLeft, Keyboard, Zap, Eye } from 'lucide-react';
+import { BookOpen, EyeOff, Type, ArrowLeft, Keyboard, Zap, Eye, Mic, Shuffle, Volume2 } from 'lucide-react';
 import { NIVEL_LABELS, NIVEL_CORES, estaVencido } from '../lib/srs';
 
 const MODOS = [
@@ -37,11 +37,35 @@ const MODOS = [
     xp: '+10–30 XP',
   },
   {
+    id: 'ordenar',
+    icone: <Shuffle size={20} />,
+    cor: 'amber',
+    titulo: 'Ordenar Palavras',
+    desc: 'Toque nas palavras na ordem certa.',
+    xp: '+15–35 XP',
+  },
+  {
+    id: 'playlist',
+    icone: <Volume2 size={20} />,
+    cor: 'teal',
+    titulo: 'Playlist de Áudio',
+    desc: 'Ouça e repita versículos sequencialmente.',
+    xp: '+15–35 XP',
+  },
+  {
     id: 'flashcard',
     icone: <BookOpen size={20} />,
     cor: 'sky',
     titulo: 'Flashcard',
     desc: 'Toque para revelar o versículo completo.',
+    xp: '+10–30 XP',
+  },
+  {
+    id: 'audio',
+    icone: <Mic size={20} />,
+    cor: 'rose',
+    titulo: 'Revisão em Áudio',
+    desc: 'Ouça e dite o versículo de memória.',
     xp: '+10–30 XP',
   },
 ];
@@ -52,6 +76,9 @@ const CORES = {
   indigo: { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'hover:border-indigo-400', btn: '' },
   green:  { bg: 'bg-green-100',  text: 'text-green-700',  border: 'hover:border-green-400',  btn: '' },
   sky:    { bg: 'bg-sky-100',    text: 'text-sky-700',    border: 'hover:border-sky-400',    btn: '' },
+  rose:   { bg: 'bg-rose-100',   text: 'text-rose-700',   border: 'hover:border-rose-400',   btn: '' },
+  amber:  { bg: 'bg-amber-100',  text: 'text-amber-700',  border: 'hover:border-amber-400',  btn: '' },
+  teal:   { bg: 'bg-teal-100',   text: 'text-teal-700',   border: 'hover:border-teal-400',   btn: '' },
 };
 
 export default function VistaMenuPratica({ versiculo, onIniciar, onVoltar }) {

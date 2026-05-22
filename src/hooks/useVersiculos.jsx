@@ -1,6 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { aplicarSRS } from '../lib/srs';
 import { buscarVersiculoLocal } from '../lib/bibleApi';
+
+const calcularPalavras = (texto) => texto.trim().split(/\s+/).filter(p => p.length > 0).length;
+
+function normalizarTexto(texto) {
+  return texto.trim().replace(/\s+/g, ' ');
+}
 
 const DADOS_INICIAIS = [
   {
@@ -8,18 +14,21 @@ const DADOS_INICIAIS = [
     texto: 'Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.',
     versiculos: null, range: null,
     nivel: 0, proximaRevisao: null, totalPraticas: 0, ultimaPratica: null,
+    palavras: 32,
   },
   {
     id: '2', referencia: 'Salmos 23:1',
     texto: 'O Senhor é o meu pastor; nada me faltará.',
     versiculos: null, range: null,
     nivel: 0, proximaRevisao: null, totalPraticas: 0, ultimaPratica: null,
+    palavras: 10,
   },
   {
     id: '3', referencia: 'Filipenses 4:13',
     texto: 'Posso todas as coisas naquele que me fortalece.',
     versiculos: null, range: null,
     nivel: 0, proximaRevisao: null, totalPraticas: 0, ultimaPratica: null,
+    palavras: 9,
   },
 ];
 
@@ -64,24 +73,27 @@ export function useVersiculos(userId) {
     localStorage.setItem(chave(userId), JSON.stringify(versiculos));
   }, [versiculos, userId]);
 
-  const adicionar = async (referencia, texto) => {
+  const adicionar = async (referencia, texto, tagsSelecionadas = [], pastaId = null, imagemUrl = null, corFundo = null) => {
     const intervalo = parseIntervalo(referencia);
-    
+    const textoNormalizado = normalizarTexto(texto);
+    const palavrasCount = calcularPalavras(textoNormalizado);
+
     // Se não é intervalo, adiciona normalmente
     if (!intervalo) {
       setVersiculos(prev => [
         ...prev,
-        { id: Date.now().toString(), referencia: referencia.trim(), texto: texto.trim(),
+        { id: Date.now().toString(), referencia: referencia.trim(), texto: textoNormalizado,
           versiculos: null, range: null,
-          nivel: 0, proximaRevisao: null, totalPraticas: 0, ultimaPratica: null },
+          nivel: 0, proximaRevisao: null, totalPraticas: 0, ultimaPratica: null,
+          palavras: palavrasCount, tags: tagsSelecionadas, pastaId, imagemUrl, corFundo },
       ]);
       return;
     }
-    
+
     // É intervalo: buscar cada versículo e criar um registro com range
     const versiculosArray = [];
     const traducao = localStorage.getItem(`memo_biblia_traducao_${userId}`) || 'almeida';
-    
+
     for (let v = intervalo.ini; v <= intervalo.fim; v++) {
       const ref = `${intervalo.livro} ${intervalo.cap}:${v}`;
       try {
@@ -92,22 +104,31 @@ export function useVersiculos(userId) {
         versiculosArray.push({ ref: ref, texto: `[${ref}]` });
       }
     }
-    
+
     // Une todos os textos para display
     const textoCompleto = versiculosArray.map(v => v.texto).join(' ');
-    
+
     setVersiculos(prev => [
       ...prev,
-      { 
-        id: Date.now().toString(), 
-        referencia: referencia.trim(), 
-        texto: textoCompleto,
+      {
+        id: Date.now().toString(),
+        referencia: referencia.trim(),
+        texto: normalizarTexto(textoCompleto),
         versiculos: versiculosArray,
         range: { ini: intervalo.ini, fim: intervalo.fim },
-        nivel: 0, proximaRevisao: null, totalPraticas: 0, ultimaPratica: null
+        nivel: 0, proximaRevisao: null, totalPraticas: 0, ultimaPratica: null,
+        palavras: calcularPalavras(normalizarTexto(textoCompleto)),
+        tags: tagsSelecionadas,
+        pastaId,
+        imagemUrl,
+        corFundo,
       },
     ]);
   };
+
+  const atualizarVersiculo = useCallback((id, updates) => {
+    setVersiculos(prev => prev.map(v => v.id === id ? { ...v, ...updates } : v));
+  }, []);
 
   const apagar = (id) => setVersiculos(prev => prev.filter(v => v.id !== id));
 
@@ -119,5 +140,5 @@ export function useVersiculos(userId) {
     if (Array.isArray(dados)) setVersiculos(dados);
   };
 
-  return { versiculos, adicionar, apagar, registrarPraticaVersiculo, restaurar };
+  return { versiculos, adicionar, apagar, atualizarVersiculo, registrarPraticaVersiculo, restaurar };
 }

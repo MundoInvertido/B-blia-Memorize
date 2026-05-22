@@ -5,9 +5,12 @@ import PraticaPrimeiraLetra from './pratica/PraticaPrimeiraLetra';
 import PraticaOcultarTotal from './pratica/PraticaOcultarTotal';
 import PraticaDigitar from './pratica/PraticaDigitar';
 import PraticaProgressiva from './pratica/PraticaProgressiva';
+import PraticaAudio from './pratica/PraticaAudio';
+import PraticaOrdenar from './pratica/PraticaOrdenar';
+import PraticaPlaylist from './pratica/PraticaPlaylist';
 import FeedbackSRS from './pratica/FeedbackSRS';
 
-export default function VistaPratica({ versiculo, modo, onVoltar, onConcluir }) {
+export default function VistaPratica({ versiculo, versiculos = [], modo, onVoltar, onConcluir }) {
   const [mostrarFeedback, setMostrarFeedback] = useState(false);
   const [indiceIntervalo, setIndiceIntervalo] = useState(0);
   const [praticandoCompleto, setPraticandoCompleto] = useState(false);
@@ -100,6 +103,9 @@ export default function VistaPratica({ versiculo, modo, onVoltar, onConcluir }) 
       {modo === 'primeiraLetra' && <PraticaPrimeiraLetra  versiculo={versiculoAtual} onConcluido={handleConcluidoIntervalo} />}
       {modo === 'ocultarTotal'  && <PraticaOcultarTotal  versiculo={versiculoAtual} onConcluido={handleConcluidoIntervalo} />}
       {modo === 'digitar'       && <PraticaDigitar       versiculo={versiculoAtual} onConcluido={handleConcluidoIntervalo} />}
+      {modo === 'ordenar'       && <PraticaOrdenar       versiculo={versiculoAtual} onConcluido={handleConcluidoIntervalo} />}
+      {modo === 'playlist'      && <PraticaPlaylist      versiculo={versiculoAtual} versiculos={versiculos} onConcluido={handleConcluidoIntervalo} />}
+      {modo === 'audio'        && <PraticaAudio        versiculo={versiculoAtual} onConcluido={handleConcluidoIntervalo} />}
     </div>
   );
 }
