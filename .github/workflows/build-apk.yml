@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [biblica_memorize]
+    branches: [biblica_memorize, bíblia_memorize]
   workflow_dispatch:
 
 jobs:
